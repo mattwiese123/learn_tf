@@ -155,3 +155,38 @@ resource "aws_vpc" "my-vpc" {
 The `Name` variable would have the value of "terraform-prod".
 
 Terraform functions can be explored in `terraform console`
+
+### 1.7 Dynamic Blocks
+Dynamic blocks allow us to dynamically construct repeatable nested configuration blocks inside Terraform. They iterate over complex variable types and output a nested block for each element in the complex variable.
+
+```terraform
+resource "aws_security_group" "my-sg" {
+    name = 'my-aws-security-group'
+    vpc_id = aws_vpc.my-vpc.id
+    ingress {
+        from_port = 22
+        to_port = 22
+        protocol = "tcp"
+        cidr_blocks = ["1.2.3.4/32"]
+    }
+    ingress {
+        ... # ingress rules
+    }
+}
+```
+vs
+```terraform
+resource "aws_security_group" "my-sg" {
+    name = 'my-aws-security-group'
+    vpc_id = aws_vpc.my-vpc.id
+    dynamic "ingress" {
+        for_each var.rules
+        content {
+            from_port = ingress.value["port"]
+            to_port = ingress.value["port"]
+            protocol = ingress.value["proto"]
+            cidr_blocks = ingress.value["cidrs"]
+        }
+    }
+}
+```
